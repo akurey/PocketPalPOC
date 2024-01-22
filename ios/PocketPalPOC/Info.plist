@@ -31,6 +31,10 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Allow this app to use Bluetooth</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Allow this app to connect to Bluetooth devices</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>UILaunchStoryboardName</key>
