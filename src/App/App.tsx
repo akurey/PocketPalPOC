@@ -1,487 +1,244 @@
-/**
- * Sample BLE React Native App
- */
-
-import React, {useState, useEffect} from 'react';
+import React, {
+  Dispatch,
+  Reducer,
+  createContext,
+  useContext,
+  useReducer,
+  useState,
+} from 'react';
 import {
-  SafeAreaView,
-  StyleSheet,
-  View,
-  Text,
-  StatusBar,
-  NativeModules,
-  NativeEventEmitter,
-  Platform,
+  DeviceEventEmitter,
   PermissionsAndroid,
-  FlatList,
-  TouchableHighlight,
-  Pressable,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  Text,
 } from 'react-native';
+import {useEffect} from 'react';
+import styles from './styles';
+import {Provider} from 'react-native-paper';
+import {Home} from '../components/pages';
+// import Beacons from 'react-native-beacons-manager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+// import {Characteristic, Device} from 'react-native-ble-plx';
 
-import {Colors} from 'react-native/Libraries/NewAppScreen';
-
-const SECONDS_TO_SCAN_FOR = 3;
-const SERVICE_UUIDS: string[] = [];
-const ALLOW_DUPLICATES = true;
-
-import BleManager, {
-  BleDisconnectPeripheralEvent,
-  BleManagerDidUpdateValueForCharacteristicEvent,
-  BleScanCallbackType,
-  BleScanMatchMode,
-  BleScanMode,
-  Peripheral,
-} from 'react-native-ble-manager';
-const BleManagerModule = NativeModules.BleManager;
-const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
-
-declare module 'react-native-ble-manager' {
-  // enrich local contract with custom state properties needed by App.tsx
-  interface Peripheral {
-    connected?: boolean;
-    connecting?: boolean;
-  }
+interface DeviceData {
+  device?: any;
+  alertDistance: string;
+  name: string;
+  rwCharacteristic: any;
+  isAlert?: boolean;
+  rssi?: number;
 }
 
-const App = () => {
-  const [isScanning, setIsScanning] = useState(false);
-  const [peripherals, setPeripherals] = useState(
-    new Map<Peripheral['id'], Peripheral>(),
-  );
+interface AppState {
+  device: DeviceData | null;
+}
 
-  //console.debug('peripherals map updated', [...peripherals.entries()]);
+type AppAction = {type: 'SET_DEVICE'; payload: DeviceData};
 
-  const startScan = () => {
-    if (!isScanning) {
-      // reset found peripherals before scan
-      setPeripherals(new Map<Peripheral['id'], Peripheral>());
+interface AppContextType {
+  state: AppState;
+  dispatch: Dispatch<AppAction>;
+}
 
-      try {
-        console.debug('[startScan] starting scan...');
-        setIsScanning(true);
-        BleManager.scan(SERVICE_UUIDS, SECONDS_TO_SCAN_FOR, ALLOW_DUPLICATES, {
-          matchMode: BleScanMatchMode.Sticky,
-          scanMode: BleScanMode.LowLatency,
-          callbackType: BleScanCallbackType.AllMatches,
-        })
-          .then(() => {
-            console.debug('[startScan] scan promise returned successfully.');
-          })
-          .catch((err: any) => {
-            console.error('[startScan] ble scan returned in error', err);
-          });
-      } catch (error) {
-        console.error('[startScan] ble scan error thrown', error);
-      }
-    }
-  };
+const AppContext = createContext<AppContextType | undefined>(undefined);
 
-  const handleStopScan = () => {
-    setIsScanning(false);
-    console.debug('[handleStopScan] scan is stopped.');
-  };
+const initialState: AppState = {
+  device: null,
+};
 
-  const handleDisconnectedPeripheral = (
-    event: BleDisconnectPeripheralEvent,
-  ) => {
-    console.debug(
-      `[handleDisconnectedPeripheral][${event.peripheral}] disconnected.`,
-    );
-    setPeripherals(map => {
-      let p = map.get(event.peripheral);
-      if (p) {
-        p.connected = false;
-        return new Map(map.set(event.peripheral, p));
-      }
-      return map;
-    });
-  };
-
-  const handleConnectPeripheral = (event: any) => {
-    console.log(`[handleConnectPeripheral][${event.peripheral}] connected.`);
-  };
-
-  const handleUpdateValueForCharacteristic = (
-    data: BleManagerDidUpdateValueForCharacteristicEvent,
-  ) => {
-    console.debug(
-      `[handleUpdateValueForCharacteristic] received data from '${data.peripheral}' with characteristic='${data.characteristic}' and value='${data.value}'`,
-    );
-  };
-
-  const handleDiscoverPeripheral = (peripheral: Peripheral) => {
-    console.debug('[handleDiscoverPeripheral] new BLE peripheral=', peripheral);
-    if (!peripheral.name) {
-      peripheral.name = 'NO NAME';
-    }
-    setPeripherals(map => {
-      return new Map(map.set(peripheral.id, peripheral));
-    });
-  };
-
-  const togglePeripheralConnection = async (peripheral: Peripheral) => {
-    if (peripheral && peripheral.connected) {
-      try {
-        await BleManager.disconnect(peripheral.id);
-      } catch (error) {
-        console.error(
-          `[togglePeripheralConnection][${peripheral.id}] error when trying to disconnect device.`,
-          error,
-        );
-      }
-    } else {
-      await connectPeripheral(peripheral);
-    }
-  };
-
-  const retrieveConnected = async () => {
-    try {
-      const connectedPeripherals = await BleManager.getConnectedPeripherals();
-      if (connectedPeripherals.length === 0) {
-        console.warn('[retrieveConnected] No connected peripherals found.');
-        return;
-      }
-
-      console.debug(
-        '[retrieveConnected] connectedPeripherals',
-        connectedPeripherals,
-      );
-
-      for (var i = 0; i < connectedPeripherals.length; i++) {
-        var peripheral = connectedPeripherals[i];
-        setPeripherals(map => {
-          let p = map.get(peripheral.id);
-          if (p) {
-            p.connected = true;
-            return new Map(map.set(p.id, p));
-          }
-          return map;
-        });
-      }
-    } catch (error) {
-      console.error(
-        '[retrieveConnected] unable to retrieve connected peripherals.',
-        error,
-      );
-    }
-  };
-
-  const connectPeripheral = async (peripheral: Peripheral) => {
-    try {
-      if (peripheral) {
-        setPeripherals(map => {
-          let p = map.get(peripheral.id);
-          if (p) {
-            p.connecting = true;
-            return new Map(map.set(p.id, p));
-          }
-          return map;
-        });
-
-        await BleManager.connect(peripheral.id);
-        console.debug(`[connectPeripheral][${peripheral.id}] connected.`);
-
-        setPeripherals(map => {
-          let p = map.get(peripheral.id);
-          if (p) {
-            p.connecting = false;
-            p.connected = true;
-            return new Map(map.set(p.id, p));
-          }
-          return map;
-        });
-
-        // before retrieving services, it is often a good idea to let bonding & connection finish properly
-        await sleep(900);
-
-        /* Test read current RSSI value, retrieve services first */
-        const peripheralData = await BleManager.retrieveServices(peripheral.id);
-        console.debug(
-          `[connectPeripheral][${peripheral.id}] retrieved peripheral services`,
-          peripheralData,
-        );
-
-        const rssi = await BleManager.readRSSI(peripheral.id);
-        console.debug(
-          `[connectPeripheral][${peripheral.id}] retrieved current RSSI value: ${rssi}.`,
-        );
-
-        if (peripheralData.characteristics) {
-          for (let characteristic of peripheralData.characteristics) {
-            if (characteristic.descriptors) {
-              for (let descriptor of characteristic.descriptors) {
-                try {
-                  let data = await BleManager.readDescriptor(
-                    peripheral.id,
-                    characteristic.service,
-                    characteristic.characteristic,
-                    descriptor.uuid,
-                  );
-                  console.debug(
-                    `[connectPeripheral][${peripheral.id}] ${characteristic.service} ${characteristic.characteristic} ${descriptor.uuid} descriptor read as:`,
-                    data,
-                  );
-                } catch (error) {
-                  console.error(
-                    `[connectPeripheral][${peripheral.id}] failed to retrieve descriptor ${descriptor} for characteristic ${characteristic}:`,
-                    error,
-                  );
-                }
-              }
-            }
-          }
-        }
-
-        setPeripherals(map => {
-          let p = map.get(peripheral.id);
-          if (p) {
-            p.rssi = rssi;
-            return new Map(map.set(p.id, p));
-          }
-          return map;
-        });
-      }
-    } catch (error) {
-      console.error(
-        `[connectPeripheral][${peripheral.id}] connectPeripheral error`,
-        error,
-      );
-    }
-  };
-
-  function sleep(ms: number) {
-    return new Promise<void>(resolve => setTimeout(resolve, ms));
+const appReducer: Reducer<AppState, AppAction> = (state, action) => {
+  switch (action.type) {
+    case 'SET_DEVICE':
+      return {...state, device: action.payload};
+    default:
+      return state;
   }
+};
 
-  useEffect(() => {
-    try {
-      BleManager.start({showAlert: false})
-        .then(() => console.debug('BleManager started.'))
-        .catch((error: any) =>
-          console.error('BeManager could not be started.', error),
-        );
-    } catch (error) {
-      console.error('unexpected error starting BleManager.', error);
-      return;
+const requestBluetoothPermission = async () => {
+  if (Platform.OS === 'ios') {
+    return true;
+  }
+  if (
+    Platform.OS === 'android' &&
+    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+  ) {
+    const apiLevel = parseInt(Platform.Version.toString(), 10);
+
+    if (apiLevel < 31) {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
-
-    const listeners = [
-      bleManagerEmitter.addListener(
-        'BleManagerDiscoverPeripheral',
-        handleDiscoverPeripheral,
-      ),
-      bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan),
-      bleManagerEmitter.addListener(
-        'BleManagerDisconnectPeripheral',
-        handleDisconnectedPeripheral,
-      ),
-      bleManagerEmitter.addListener(
-        'BleManagerDidUpdateValueForCharacteristic',
-        handleUpdateValueForCharacteristic,
-      ),
-      bleManagerEmitter.addListener(
-        'BleManagerConnectPeripheral',
-        handleConnectPeripheral,
-      ),
-    ];
-
-    handleAndroidPermissions();
-
-    return () => {
-      console.debug('[app] main component unmounting. Removing listeners...');
-      for (const listener of listeners) {
-        listener.remove();
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleAndroidPermissions = () => {
-    if (Platform.OS === 'android' && Platform.Version >= 31) {
-      PermissionsAndroid.requestMultiple([
+    if (
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN &&
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
+    ) {
+      const result = await PermissionsAndroid.requestMultiple([
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-      ]).then(result => {
-        if (result) {
-          console.debug(
-            '[handleAndroidPermissions] User accepts runtime permissions android 12+',
-          );
-        } else {
-          console.error(
-            '[handleAndroidPermissions] User refuses runtime permissions android 12+',
-          );
-        }
-      });
-    } else if (Platform.OS === 'android' && Platform.Version >= 23) {
-      PermissionsAndroid.check(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      ).then(checkResult => {
-        if (checkResult) {
-          console.debug(
-            '[handleAndroidPermissions] runtime permission Android <12 already OK',
+      ]);
+
+      return (
+        result['android.permission.BLUETOOTH_CONNECT'] ===
+          PermissionsAndroid.RESULTS.GRANTED &&
+        result['android.permission.BLUETOOTH_SCAN'] ===
+          PermissionsAndroid.RESULTS.GRANTED &&
+        result['android.permission.ACCESS_FINE_LOCATION'] ===
+          PermissionsAndroid.RESULTS.GRANTED
+      );
+    }
+  }
+
+  // this.showErrorToast('Permission have not been granted')
+  console.warn('Permission have not been granted');
+
+  return false;
+};
+
+export interface Beacon {
+  uuid: string;
+  major: number;
+  minor: number;
+  rssi: number;
+  proximity: string;
+  accuracy: number;
+}
+
+function App(): React.JSX.Element {
+  const [state, dispatch] = useReducer(appReducer, initialState);
+  const [currentDistance, setCurrentDistance] = useState(0);
+  const [rssi, setRssi] = useState(0);
+
+  // Load data from AsyncStorage on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const deviceData = await AsyncStorage.getItem('deviceData');
+        if (deviceData) {
+          dispatch({type: 'SET_DEVICE', payload: JSON.parse(deviceData)});
+        }
+      } catch (error) {
+        console.error('Error loading data from AsyncStorage:', error);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Save data to AsyncStorage whenever device changes
+  useEffect(() => {
+    const saveData = async () => {
+      try {
+        await AsyncStorage.setItem('deviceData', JSON.stringify(state.device));
+      } catch (error) {
+        console.error('Error saving data to AsyncStorage:', error);
+      }
+    };
+
+    saveData();
+  }, [state.device]);
+
+  // useEffect(() => {
+  //   requestBluetoothPermission();
+  //   // rangeBeacons();
+  // }, []);
+
+  // const rangeBeacons = async () => {
+  //   const region = {
+  //     identifier: 'ESP TAG APP',
+  //     uuid: 'fda50693-a4e2-4fb1-afcf-c6eb07647825', // Why this is burned ?
+  //     major: 10167,
+  //     minor: 61958,
+  //   };
+
+  //   if (Platform.OS === 'android') {
+  //     Beacons.detectIBeacons();
+  //   } else {
+  //     Beacons.requestAlwaysAuthorization();
+  //     Beacons.startMonitoringForRegion(region);
+  //   }
+
+  //   try {
+  //     await Beacons.startRangingBeaconsInRegion(region);
+  //     console.log('Beacons ranging started succesfully!');
+  //   } catch (err) {
+  //     console.error(`Beacons ranging not started, error: ${err}`);
+  //   }
+
+  //   if (Platform.OS === 'ios') {
+  //     Beacons.startUpdatingLocation();
+  //   }
+  // };
+
+  useEffect(() => {
+    DeviceEventEmitter.addListener('beaconsDidRange', ({beacons}) => {
+      beacons.map((beacon: Beacon) => {
+        if (
+          beacon.rssi !== 0 &&
+          beacon.uuid === 'FDA50693-A4E2-4FB1-AFCF-C6EB07647825'
+        ) {
+          const time = new Date();
+          const opciones = {
+            timeZone: 'America/Mexico_City', // UTC-6
+            hour12: true, // Para usar el formato de 24 horas
+          };
+          const fechaHoraUTC6 = time.toLocaleString('es-MX', opciones);
+
+          // console.log(
+          //   '🚀 ~ file: App.tsx:189 ~ beacons.map ~ beacon:',
+          //   'accuracy: ',
+          //   beacon.accuracy,
+          //   'rssi: ',
+          //   beacon.rssi,
+          //   'time:',
+          //   time,
+          // );
+          console.log('RSSI: ', beacon.rssi);
+          setRssi(beacon.rssi);
+          console.log('TIME: ', fechaHoraUTC6);
+
+          const pathLossExponent = 2.0;
+          const distance = Math.pow(
+            10,
+            (-69 - beacon.rssi) / (10 * pathLossExponent),
           );
-        } else {
-          PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          ).then(requestResult => {
-            if (requestResult) {
-              console.debug(
-                '[handleAndroidPermissions] User accepts runtime permission android <12',
-              );
-            } else {
-              console.error(
-                '[handleAndroidPermissions] User refuses runtime permission android <12',
-              );
-            }
-          });
+          console.log('Distancia: ', distance);
+          setCurrentDistance(distance);
         }
       });
-    }
-  };
+    });
 
-  const renderItem = ({item}: {item: Peripheral}) => {
-    const backgroundColor = item.connected ? '#069400' : Colors.white;
-    return (
-      <TouchableHighlight
-        underlayColor="#0082FC"
-        onPress={() => togglePeripheralConnection(item)}>
-        <View style={[styles.row, {backgroundColor}]}>
-          <Text style={styles.peripheralName}>
-            {/* completeLocalName (item.name) & shortAdvertisingName (advertising.localName) may not always be the same */}
-            {item.name} - {item?.advertising?.localName}
-            {item.connecting && ' - Connecting...'}
-          </Text>
-          <Text style={styles.rssi}>RSSI: {item.rssi}</Text>
-          <Text style={styles.peripheralId}>{item.id}</Text>
-        </View>
-      </TouchableHighlight>
-    );
-  };
+    DeviceEventEmitter.addListener('regionDidEnter', data => {
+      console.log('regionDidEnter', data);
+    });
+    DeviceEventEmitter.addListener('regionDidExit', data => {
+      console.log('regionDidExit', data);
+    });
+  }, []);
 
   return (
-    <>
-      <StatusBar />
-      <SafeAreaView style={styles.body}>
-        <Pressable style={styles.scanButton} onPress={startScan}>
-          <Text style={styles.scanButtonText}>
-            {isScanning ? 'Scanning...' : 'Scan Bluetooth'}
-          </Text>
-        </Pressable>
-
-        <Pressable style={styles.scanButton} onPress={retrieveConnected}>
-          <Text style={styles.scanButtonText}>
-            {'Retrieve connected peripherals'}
-          </Text>
-        </Pressable>
-
-        {Array.from(peripherals.values()).length === 0 && (
-          <View style={styles.row}>
-            <Text style={styles.noPeripherals}>
-              No Peripherals, press "Scan Bluetooth" above.
-            </Text>
-          </View>
-        )}
-
-        <FlatList
-          data={Array.from(peripherals.values())}
-          contentContainerStyle={{rowGap: 12}}
-          renderItem={renderItem}
-          keyExtractor={item => item.id}
-        />
-      </SafeAreaView>
-    </>
+    <AppContext.Provider value={{state, dispatch}}>
+      <Provider>
+        <SafeAreaView style={styles.container}>
+          <StatusBar />
+          <Home />
+        </SafeAreaView>
+      </Provider>
+    </AppContext.Provider>
   );
-};
-
-const boxShadow = {
-  shadowColor: '#000',
-  shadowOffset: {
-    width: 0,
-    height: 2,
-  },
-  shadowOpacity: 0.25,
-  shadowRadius: 3.84,
-  elevation: 5,
-};
-
-const styles = StyleSheet.create({
-  engine: {
-    position: 'absolute',
-    right: 10,
-    bottom: 0,
-    color: Colors.black,
-  },
-  scanButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    backgroundColor: '#0a398a',
-    margin: 10,
-    borderRadius: 12,
-    ...boxShadow,
-  },
-  scanButtonText: {
-    fontSize: 20,
-    letterSpacing: 0.25,
-    color: Colors.white,
-  },
-  body: {
-    backgroundColor: '#0082FC',
-    flex: 1,
-  },
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.black,
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-    color: Colors.dark,
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-  footer: {
-    color: Colors.dark,
-    fontSize: 12,
-    fontWeight: '600',
-    padding: 4,
-    paddingRight: 12,
-    textAlign: 'right',
-  },
-  peripheralName: {
-    fontSize: 16,
-    textAlign: 'center',
-    padding: 10,
-  },
-  rssi: {
-    fontSize: 12,
-    textAlign: 'center',
-    padding: 2,
-  },
-  peripheralId: {
-    fontSize: 12,
-    textAlign: 'center',
-    padding: 2,
-    paddingBottom: 20,
-  },
-  row: {
-    marginLeft: 10,
-    marginRight: 10,
-    borderRadius: 20,
-    ...boxShadow,
-  },
-  noPeripherals: {
-    margin: 10,
-    textAlign: 'center',
-    color: Colors.white,
-  },
-});
+}
 
 export default App;
+
+export const useAppContext = (): AppContextType => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useAppContext must be used within an AppProvider');
+  }
+  return context;
+};
