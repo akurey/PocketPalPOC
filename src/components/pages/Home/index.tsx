@@ -18,6 +18,9 @@ import {
   Pressable,
   ScrollView,
   TouchableOpacity,
+  Keyboard,
+  TouchableWithoutFeedback,
+  TextInput,
 } from 'react-native';
 import {Modal, Portal, ActivityIndicator} from 'react-native-paper';
 import {
@@ -40,6 +43,8 @@ import {Device, Header} from '../../molecules';
 import {ErrorBoxImage} from '../../../assets/images';
 import {useAppContext} from '../../../App/App';
 
+import {Peripheral} from 'react-native-ble-manager';
+
 declare module 'react-native-ble-manager' {
   // enrich local contract with custom state properties needed by App.tsx
   interface Peripheral {
@@ -49,24 +54,44 @@ declare module 'react-native-ble-manager' {
 }
 
 const Home = () => {
+  const [peripheralSelected, setPeripheralSelected] = useState<Peripheral>();
+
   const {
     isScanning,
     compatibleDevicesModalVisible,
-    connectionStatus,
+    addDeviceModalVisible,
     peripherals,
     peripheralConnected,
+    newDeviceDistance,
+    setNewDeviceDistance,
+    newDeviceName,
+    showAddDeviceModal,
+    hideAddDeviceModal,
+    setNewDeviceName,
     showCompatibleDevicesModal,
     hideCompatibleDevicesModal,
     togglePeripheralConnection,
+    increaseDistance,
+    decreaseDistance,
   } = useHome({});
 
   useEffect(() => {
     if (peripheralConnected) {
-      console.log('🚀 ~ useEffect ~ peripheralConnected:', peripheralConnected);
-      hideCompatibleDevicesModal();
+      hideAddDeviceModal();
     }
   }, [peripheralConnected]);
   //console.debug('peripherals map updated', [...peripherals.entries()]);
+
+  const onPressAddDevice = (item: any) => {
+    setPeripheralSelected(item);
+    showAddDeviceModal(item.name);
+  };
+
+  const onPressConnect = () => {
+    if (peripheralSelected) {
+      togglePeripheralConnection(peripheralSelected);
+    }
+  };
 
   const renderItem = ({item}: {item: any}) => {
     return (
@@ -74,7 +99,7 @@ const Home = () => {
         <Text style={[styles.modalText, styles.deviceName]}>{item.name}</Text>
         <TouchableOpacity
           style={styles.addDeviceButton}
-          onPress={() => togglePeripheralConnection(item)}>
+          onPress={() => onPressAddDevice(item)}>
           <Text style={[styles.modalText, styles.addButtonText]}>Add</Text>
         </TouchableOpacity>
       </View>
@@ -94,8 +119,8 @@ const Home = () => {
         {peripheralConnected ? (
           <Device
             deviceName={DEVICENAME}
-            alertDistance={10}
-            currentLocation={'With you'}
+            alertDistance={10} //{parseInt(state.device.alertDistance, 10)}
+            currentLocation={'With you'} //{currentDistance <= parseInt(state.device.alertDistance, 10)? 'With you': `${currentDistance.toFixed(2)} meters away.`}
             onPressAction={() =>
               togglePeripheralConnection(peripheralConnected)
             }
@@ -144,19 +169,6 @@ const Home = () => {
             ) : peripherals.size ? (
               <>
                 <View style={styles.deviceContainer}>
-                  {/* <Text style={[styles.modalText, styles.deviceName]}>
-                    {compatibleDevice?.name ||
-                      compatibleDevice?.localName ||
-                      'PocketPal'}
-                  </Text> */}
-
-                  {/* <TouchableOpacity
-                    style={styles.addDeviceButton}
-                    onPress={() => console.log('Add')}>
-                    <Text style={[styles.modalText, styles.addButtonText]}>
-                      Add
-                    </Text>
-                  </TouchableOpacity> */}
                   <FlatList
                     data={Array.from(peripherals.values())}
                     contentContainerStyle={{rowGap: 8}}
@@ -193,6 +205,92 @@ const Home = () => {
               </Text>
             </TouchableOpacity>
           </View>
+        </Modal>
+      </Portal>
+      {/* add device modal */}
+      <Portal>
+        <Modal
+          visible={addDeviceModalVisible}
+          contentContainerStyle={styles.modal}
+          dismissable={false}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={[styles.modalContainer, styles.addDeviceContainer]}>
+              <Text style={[styles.modalText, styles.modalTitle]}>
+                Add New Device
+              </Text>
+              <View style={styles.nameInputContainer}>
+                <Text style={[styles.modalText, styles.deviceName]}>
+                  Name Device
+                </Text>
+                <TextInput
+                  style={[styles.input, styles.modalText, styles.inputText]}
+                  onChangeText={setNewDeviceName}
+                  value={newDeviceName}
+                />
+              </View>
+              <View style={styles.distanceContainer}>
+                <Text style={[styles.modalText, styles.deviceName]}>
+                  Set Alert Distance (meters)
+                </Text>
+                <View style={styles.distanceControllerContainer}>
+                  <TouchableOpacity
+                    style={styles.distanceButton}
+                    onPress={decreaseDistance}
+                    disabled={newDeviceDistance === '1'}>
+                    <MinusIcon
+                      color={
+                        newDeviceDistance === '1'
+                          ? COLOR_LIGHT_GRAY
+                          : COLOR_PRIMARY_DARK
+                      }
+                    />
+                  </TouchableOpacity>
+                  {/* todo: add validation */}
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.modalText,
+                      styles.distanceInput,
+                    ]}
+                    onChangeText={setNewDeviceDistance}
+                    value={newDeviceDistance}
+                    keyboardType="number-pad"
+                  />
+                  <TouchableOpacity
+                    style={styles.distanceButton}
+                    onPress={increaseDistance}
+                    disabled={newDeviceDistance === '10'}>
+                    <PlusIcon
+                      height={20}
+                      width={20}
+                      color={
+                        newDeviceDistance === '10'
+                          ? COLOR_LIGHT_GRAY
+                          : COLOR_PRIMARY_DARK
+                      }
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <View style={styles.buttonsContainer}>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={hideAddDeviceModal}>
+                  <Text style={[styles.modalText, styles.modalSubtitle]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalRightButton]}
+                  onPress={onPressConnect}
+                  disabled={newDeviceName === '' || newDeviceDistance === ''}>
+                  <Text style={[styles.modalText, styles.modalButtonText]}>
+                    Add
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
         </Modal>
       </Portal>
     </Fragment>

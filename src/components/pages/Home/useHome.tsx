@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {Dispatch, SetStateAction, useEffect, useState} from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -28,30 +28,20 @@ interface HomeProps {}
 interface Hook {
   isScanning: boolean;
   compatibleDevicesModalVisible: boolean;
-  connectionStatus: string;
+  addDeviceModalVisible: boolean;
   peripherals: Map<string, Peripheral>;
   peripheralConnected: Peripheral | undefined;
-
+  newDeviceDistance: string;
+  setNewDeviceDistance: Dispatch<SetStateAction<string>>;
+  newDeviceName: string;
+  showAddDeviceModal: (peripheralName: string) => void;
+  hideAddDeviceModal: () => void;
+  setNewDeviceName: Dispatch<SetStateAction<string>>;
   showCompatibleDevicesModal: () => void;
   hideCompatibleDevicesModal: () => void;
   togglePeripheralConnection: (peripheral: Peripheral) => Promise<void>;
-  //   hideCompatibleDevicesModal: () => void;
-  //   addDeviceModalVisible: boolean;
-  //   showAddDeviceModal: () => void;
-  //   hideAddDeviceModal: () => void;
-  //   newDeviceName: string;
-  //   setNewDeviceName: any;
-  //   lookForDevices: () => void;
-  //   addDevice: () => void;
-  //   newDeviceDistance: string;
-  //   setNewDeviceDistance: any;
-  //   increaseDistance: () => void;
-  //   decreaseDistance: () => void;
-  //   compatibleDevice?: Device;
-  //   disconnectAlert?: () => void;
-  //   isAlert: boolean;
-  //   handleAuthenticate: () => void;
-  //   biometricsType: string;
+  increaseDistance: () => void;
+  decreaseDistance: () => void;
 }
 import BleManager, {
   BleDisconnectPeripheralEvent,
@@ -74,15 +64,28 @@ declare module 'react-native-ble-manager' {
 
 export function useHome({}: HomeProps): Hook {
   const {state: contextState, dispatch} = useAppContext();
+  const [newDeviceName, setNewDeviceName] = useState('');
+
   const [compatibleDevicesModalVisible, setCompatibleDevicesModalVisible] =
     useState(false);
-  const [connectionStatus, setConnectionStatus] = useState('');
-
+  const [addDeviceModalVisible, setAddDeviceModalVisible] = useState(false);
+  const [newDeviceDistance, setNewDeviceDistance] = useState('2');
   const [isScanning, setIsScanning] = useState(false);
   const [peripherals, setPeripherals] = useState(
     new Map<Peripheral['id'], Peripheral>(),
   );
+
   const [peripheralConnected, setPeripheralConnected] = useState<Peripheral>();
+
+  const increaseDistance = () => {
+    const distance = parseInt(newDeviceDistance, 10) + 1;
+    setNewDeviceDistance(distance.toString());
+  };
+
+  const decreaseDistance = () => {
+    const distance = parseInt(newDeviceDistance, 10) - 1;
+    setNewDeviceDistance(distance.toString());
+  };
 
   const startScan = () => {
     if (!isScanning) {
@@ -134,7 +137,6 @@ export function useHome({}: HomeProps): Hook {
     //            setPeripheralConnected(p);
     // const peripheral = peripherals.get(event.peripheral);
     // console.log('🚀 ~ handleConnectPeripheral ~ peripheral:', peripheral);
-
     console.log(`[handleConnectPeripheral][${event.peripheral}] connected.`);
   };
 
@@ -153,11 +155,6 @@ export function useHome({}: HomeProps): Hook {
         return new Map(map.set(peripheral.id, peripheral));
       });
     }
-
-    //Agrega el peripheal a la lista.
-    // if (peripheral.name === DEVICENAME) {
-
-    // }
   };
 
   const togglePeripheralConnection = async (peripheral: Peripheral) => {
@@ -392,14 +389,30 @@ export function useHome({}: HomeProps): Hook {
     handleStopScan();
   };
 
+  const showAddDeviceModal = (peripheralName: string) => {
+    setNewDeviceName(peripheralName);
+    setAddDeviceModalVisible(true);
+    setCompatibleDevicesModalVisible(false);
+  };
+
+  const hideAddDeviceModal = () => setAddDeviceModalVisible(false);
+
   return {
     isScanning,
     compatibleDevicesModalVisible,
-    connectionStatus,
+    addDeviceModalVisible,
     peripherals,
     peripheralConnected,
+    newDeviceDistance,
+    setNewDeviceDistance,
+    newDeviceName,
+    showAddDeviceModal,
+    hideAddDeviceModal,
+    setNewDeviceName,
     showCompatibleDevicesModal,
     hideCompatibleDevicesModal,
     togglePeripheralConnection,
+    increaseDistance,
+    decreaseDistance,
   };
 }
