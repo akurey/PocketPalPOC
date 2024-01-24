@@ -47,4 +47,8 @@ export default StyleSheet.create({
     display: 'flex',
     gap: 11,
   },
+  activityIndicator: {
+    marginTop: 45,
+    marginBottom: 20,
+  },
 });

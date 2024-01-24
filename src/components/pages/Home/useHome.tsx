@@ -27,6 +27,7 @@ interface HomeProps {}
 
 interface Hook {
   isScanning: boolean;
+  isConnecting: boolean;
   compatibleDevicesModalVisible: boolean;
   addDeviceModalVisible: boolean;
   peripherals: Map<string, Peripheral>;
@@ -42,6 +43,7 @@ interface Hook {
   togglePeripheralConnection: (peripheral: Peripheral) => Promise<void>;
   increaseDistance: () => void;
   decreaseDistance: () => void;
+  sendSignalToTurnOnLED: (peripheralId: string, signal: number) => void;
 }
 import BleManager, {
   BleDisconnectPeripheralEvent,
@@ -65,15 +67,17 @@ declare module 'react-native-ble-manager' {
 export function useHome({}: HomeProps): Hook {
   const {state: contextState, dispatch} = useAppContext();
   const [newDeviceName, setNewDeviceName] = useState('');
-
   const [compatibleDevicesModalVisible, setCompatibleDevicesModalVisible] =
     useState(false);
   const [addDeviceModalVisible, setAddDeviceModalVisible] = useState(false);
   const [newDeviceDistance, setNewDeviceDistance] = useState('2');
+  const [isConnecting, setIsConnecting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [peripherals, setPeripherals] = useState(
     new Map<Peripheral['id'], Peripheral>(),
   );
+  const [serviceUUID, setServiceUUID] = useState<string>('');
+  const [characteristicUUID, setCharacteristicUUID] = useState<string>('');
 
   const [peripheralConnected, setPeripheralConnected] = useState<Peripheral>();
 
@@ -127,6 +131,7 @@ export function useHome({}: HomeProps): Hook {
       let p = map.get(event.peripheral);
       if (p) {
         p.connected = false;
+        setPeripheralConnected(undefined);
         return new Map(map.set(event.peripheral, p));
       }
       return map;
@@ -134,9 +139,6 @@ export function useHome({}: HomeProps): Hook {
   };
 
   const handleConnectPeripheral = (event: any) => {
-    //            setPeripheralConnected(p);
-    // const peripheral = peripherals.get(event.peripheral);
-    // console.log('🚀 ~ handleConnectPeripheral ~ peripheral:', peripheral);
     console.log(`[handleConnectPeripheral][${event.peripheral}] connected.`);
   };
 
@@ -158,6 +160,7 @@ export function useHome({}: HomeProps): Hook {
   };
 
   const togglePeripheralConnection = async (peripheral: Peripheral) => {
+    setIsConnecting(true);
     if (peripheral && peripheral.connected) {
       //Si el peripheral ya esta conectado entonces lo desconecta.
       try {
@@ -168,6 +171,8 @@ export function useHome({}: HomeProps): Hook {
           `[togglePeripheralConnection][${peripheral.id}] error when trying to disconnect device.`,
           error,
         );
+      } finally {
+        setIsConnecting(false);
       }
     } else {
       await connectPeripheral(peripheral);
@@ -205,6 +210,7 @@ export function useHome({}: HomeProps): Hook {
       );
     }
   };
+
   const connectPeripheral = async (peripheral: Peripheral) => {
     try {
       if (peripheral) {
@@ -226,6 +232,8 @@ export function useHome({}: HomeProps): Hook {
             p.connecting = false;
             p.connected = true;
             setPeripheralConnected(p);
+            setIsConnecting(false);
+
             return new Map(map.set(p.id, p));
           }
           return map;
@@ -236,10 +244,18 @@ export function useHome({}: HomeProps): Hook {
 
         /* Test read current RSSI value, retrieve services first */
         const peripheralData = await BleManager.retrieveServices(peripheral.id);
-        console.debug(
-          `[connectPeripheral][${peripheral.id}] retrieved peripheral services`,
-          peripheralData,
-        );
+
+        const services = peripheralData.services;
+        const characteristics = peripheralData.characteristics;
+        if (services?.length && characteristics?.length) {
+          setServiceUUID(services[0].uuid);
+          setCharacteristicUUID(characteristics[0].characteristic);
+          await BleManager.startNotification(
+            peripheral.id,
+            services[0].uuid,
+            characteristics[0].characteristic,
+          );
+        }
 
         const rssi = await BleManager.readRSSI(peripheral.id);
         console.debug(
@@ -276,6 +292,8 @@ export function useHome({}: HomeProps): Hook {
           let p = map.get(peripheral.id);
           if (p) {
             p.rssi = rssi;
+            setPeripheralConnected(p);
+            setIsConnecting(false);
             return new Map(map.set(p.id, p));
           }
           return map;
@@ -292,6 +310,38 @@ export function useHome({}: HomeProps): Hook {
   function sleep(ms: number) {
     return new Promise<void>(resolve => setTimeout(resolve, ms));
   }
+
+  const sendSignalToTurnOnLED = async (
+    peripheralId: string,
+    signal: number,
+  ): Promise<void> => {
+    try {
+      //If exist serviceUUI and characteristicUUID , update the value according with signal
+      if (serviceUUID.length > 0 && characteristicUUID.length > 0) {
+        if (signal === 0 && peripheralConnected) {
+          // await connectPeripheral(peripheralConnected);
+          console.log('Apaga la señal');
+        } else {
+          console.log('Enciende la señal');
+        }
+        // Valor que se enviará para encender el LED (puede variar según la configuración del dispositivo)
+        const valueToWrite = new Uint8Array([signal]); // Puedes ajustar este valor según las especificaciones del dispositivo
+        // Convertir Uint8Array a un array de números
+        const valueArray = Array.from(valueToWrite);
+
+        // Escribir el valor en la característica correspondiente
+        await BleManager.write(
+          peripheralId,
+          serviceUUID,
+          characteristicUUID,
+          valueArray,
+        );
+      }
+    } catch (error) {
+      console.error('❌ Error al enviar la señal para encender el LED:', error);
+      throw error; // Puedes manejar el error según tus necesidades
+    }
+  };
 
   useEffect(() => {
     try {
@@ -399,6 +449,7 @@ export function useHome({}: HomeProps): Hook {
 
   return {
     isScanning,
+    isConnecting,
     compatibleDevicesModalVisible,
     addDeviceModalVisible,
     peripherals,
@@ -414,5 +465,6 @@ export function useHome({}: HomeProps): Hook {
     togglePeripheralConnection,
     increaseDistance,
     decreaseDistance,
+    sendSignalToTurnOnLED,
   };
 }

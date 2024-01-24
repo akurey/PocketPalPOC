@@ -44,6 +44,7 @@ import {ErrorBoxImage} from '../../../assets/images';
 import {useAppContext} from '../../../App/App';
 
 import {Peripheral} from 'react-native-ble-manager';
+import ConnectingDevice from '../../molecules/Device/connectingDevice';
 
 declare module 'react-native-ble-manager' {
   // enrich local contract with custom state properties needed by App.tsx
@@ -58,6 +59,7 @@ const Home = () => {
 
   const {
     isScanning,
+    isConnecting,
     compatibleDevicesModalVisible,
     addDeviceModalVisible,
     peripherals,
@@ -73,11 +75,12 @@ const Home = () => {
     togglePeripheralConnection,
     increaseDistance,
     decreaseDistance,
+    sendSignalToTurnOnLED,
   } = useHome({});
 
   useEffect(() => {
     if (peripheralConnected) {
-      hideAddDeviceModal();
+      // hideAddDeviceModal();
     }
   }, [peripheralConnected]);
   //console.debug('peripherals map updated', [...peripherals.entries()]);
@@ -89,6 +92,7 @@ const Home = () => {
 
   const onPressConnect = () => {
     if (peripheralSelected) {
+      hideAddDeviceModal();
       togglePeripheralConnection(peripheralSelected);
     }
   };
@@ -108,6 +112,17 @@ const Home = () => {
 
   const {state} = useAppContext();
 
+  const activeAlarm = () => {
+    if (peripheralSelected) {
+      sendSignalToTurnOnLED(peripheralSelected.id, 1);
+    }
+  };
+
+  const deactiveAlarm = () => {
+    if (peripheralSelected) {
+      sendSignalToTurnOnLED(peripheralSelected.id, 0);
+    }
+  };
   return (
     <Fragment>
       <View style={styles.homeTopContainer}>
@@ -116,6 +131,7 @@ const Home = () => {
         <Text style={[styles.text, styles.welcomeText]}>Welcome!</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollView}>
+        {isConnecting && <ConnectingDevice />}
         {peripheralConnected ? (
           <Device
             deviceName={DEVICENAME}
@@ -125,24 +141,29 @@ const Home = () => {
               togglePeripheralConnection(peripheralConnected)
             }
           />
-        ) : (
+        ) : !isConnecting ? (
           <Fragment>
             <ErrorBoxImage style={styles.noDevicesImage} />
             <Text style={styles.noDevicesText}>
               You haven't registered any device
             </Text>
           </Fragment>
-        )}
+        ) : null}
       </ScrollView>
       <View style={styles.homeButtonsContainer}>
-        <SettingsIcon />
+        <TouchableOpacity onPress={activeAlarm}>
+          <SettingsIcon />
+        </TouchableOpacity>
+
         <View style={styles.addButtonContainer}>
           <RoundedButtonWithIcon
             disabled={state.device !== null}
             onClick={showCompatibleDevicesModal}
           />
         </View>
-        <ProfileIcon />
+        <TouchableOpacity onPress={deactiveAlarm}>
+          <ProfileIcon />
+        </TouchableOpacity>
       </View>
       {/* compatible devices modal */}
       <Portal>
