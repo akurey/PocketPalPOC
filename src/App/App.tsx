@@ -12,15 +12,13 @@ import {
   Platform,
   SafeAreaView,
   StatusBar,
-  Text,
 } from 'react-native';
 import {useEffect} from 'react';
 import styles from './styles';
 import {Provider} from 'react-native-paper';
 import {Home} from '../components/pages';
-// import Beacons from 'react-native-beacons-manager';
+import Beacons from 'react-native-beacons-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// import {Characteristic, Device} from 'react-native-ble-plx';
 
 interface DeviceData {
   device?: any;
@@ -143,37 +141,44 @@ function App(): React.JSX.Element {
     saveData();
   }, [state.device]);
 
-  // useEffect(() => {
-  //   requestBluetoothPermission();
-  //   // rangeBeacons();
-  // }, []);
+  useEffect(() => {
+    console.log('Start - 1 ');
+    requestBluetoothPermission();
+    rangeBeacons();
+  }, []);
 
-  // const rangeBeacons = async () => {
-  //   const region = {
-  //     identifier: 'ESP TAG APP',
-  //     uuid: 'fda50693-a4e2-4fb1-afcf-c6eb07647825', // Why this is burned ?
-  //     major: 10167,
-  //     minor: 61958,
-  //   };
+  const rangeBeacons = async () => {
+    console.log('Reage beacons - 2');
+    const region = {
+      identifier: 'ESP TAG APP',
+      uuid: 'FDA50693-A4E2-4FB1-AFCF-C6EB07647825', // Why this is burned ?
+      major: 10167,
+      minor: 61958,
+    };
 
-  //   if (Platform.OS === 'android') {
-  //     Beacons.detectIBeacons();
-  //   } else {
-  //     Beacons.requestAlwaysAuthorization();
-  //     Beacons.startMonitoringForRegion(region);
-  //   }
+    if (Platform.OS === 'android') {
+      Beacons.detectIBeacons();
+    } else {
+      try {
+        console.log('🚀 ~ rangeBeacons ~ region:', region);
+        Beacons.requestAlwaysAuthorization();
+        Beacons.startMonitoringForRegion(region);
+      } catch (error) {
+        console.log('🚀 ~ rangeBeacons ~ error:', error);
+      }
+    }
 
-  //   try {
-  //     await Beacons.startRangingBeaconsInRegion(region);
-  //     console.log('Beacons ranging started succesfully!');
-  //   } catch (err) {
-  //     console.error(`Beacons ranging not started, error: ${err}`);
-  //   }
+    try {
+      await Beacons.startRangingBeaconsInRegion(region);
+      console.log('Beacons ranging started succesfully!');
+    } catch (err) {
+      console.error(`Beacons ranging not started, error: ${err}`);
+    }
 
-  //   if (Platform.OS === 'ios') {
-  //     Beacons.startUpdatingLocation();
-  //   }
-  // };
+    if (Platform.OS === 'ios') {
+      Beacons.startUpdatingLocation();
+    }
+  };
 
   useEffect(() => {
     DeviceEventEmitter.addListener('beaconsDidRange', ({beacons}) => {

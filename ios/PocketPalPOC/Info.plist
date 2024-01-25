@@ -37,12 +37,26 @@
 	<string>Allow this app to connect to Bluetooth devices</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-peripheral</string>
+		<string>fetch</string>
+		<string>location</string>
+		<string>processing</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>
 	</array>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>PocketPal needs access to your location</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>PocketPal needs to access biometics</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>PocketPal needs access to your location</string>
+	
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
