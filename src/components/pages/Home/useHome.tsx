@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import {useAppContext} from '../../../App/App';
 // import {encode} from 'base-64';
-// import ReactNativeBiometrics, {BiometryTypes} from 'react-native-biometrics';
+import ReactNativeBiometrics, {BiometryTypes} from 'react-native-biometrics';
 import {DEVICENAME} from '../../../constants/states';
 
 const SECONDS_TO_SCAN_FOR = 3;
@@ -26,6 +26,7 @@ const ALLOW_DUPLICATES = true;
 interface HomeProps {}
 
 interface Hook {
+  isAlert: boolean;
   isScanning: boolean;
   isConnecting: boolean;
   compatibleDevicesModalVisible: boolean;
@@ -41,9 +42,9 @@ interface Hook {
   showCompatibleDevicesModal: () => void;
   hideCompatibleDevicesModal: () => void;
   togglePeripheralConnection: (peripheral: Peripheral) => Promise<void>;
-  increaseDistance: () => void;
-  decreaseDistance: () => void;
-  sendSignalToTurnOnLED: (peripheralId: string, signal: number) => void;
+  handleAuthenticate: () => void;
+  sendSignalToTurnOnLED: (peripheral: Peripheral, signal: number) => void;
+  biometricsType: string;
 }
 import BleManager, {
   BleDisconnectPeripheralEvent,
@@ -76,19 +77,39 @@ export function useHome({}: HomeProps): Hook {
   const [peripherals, setPeripherals] = useState(
     new Map<Peripheral['id'], Peripheral>(),
   );
-  const [serviceUUID, setServiceUUID] = useState<string>('');
-  const [characteristicUUID, setCharacteristicUUID] = useState<string>('');
-
   const [peripheralConnected, setPeripheralConnected] = useState<Peripheral>();
+  const [isAlert, setIsAlert] = useState(false);
 
-  const increaseDistance = () => {
-    const distance = parseInt(newDeviceDistance, 10) + 1;
-    setNewDeviceDistance(distance.toString());
-  };
+  const [biometricsType, setBiometricsType] = useState('');
 
-  const decreaseDistance = () => {
-    const distance = parseInt(newDeviceDistance, 10) - 1;
-    setNewDeviceDistance(distance.toString());
+  const handleAuthenticate = async () => {
+    try {
+      const biometrics = new ReactNativeBiometrics({
+        allowDeviceCredentials: true,
+      });
+      const {available} = await biometrics.isSensorAvailable();
+      if (available) {
+        const result = await biometrics.simplePrompt({
+          promptMessage: 'Authenticate',
+        });
+        if (result.success) {
+          console.log('SUCCESS');
+          if (peripheralConnected) {
+            await BleManager.disconnect(peripheralConnected?.id);
+          }
+          setIsAlert(false);
+          // Biometric authentication successful
+        } else {
+          console.log('FAIL');
+          // Biometric authentication failed
+        }
+      } else {
+        // Biometric authentication not available
+        // fallback to username/password login
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const startScan = () => {
@@ -131,7 +152,6 @@ export function useHome({}: HomeProps): Hook {
       let p = map.get(event.peripheral);
       if (p) {
         p.connected = false;
-        setPeripheralConnected(undefined);
         return new Map(map.set(event.peripheral, p));
       }
       return map;
@@ -165,7 +185,6 @@ export function useHome({}: HomeProps): Hook {
       //Si el peripheral ya esta conectado entonces lo desconecta.
       try {
         await BleManager.disconnect(peripheral.id);
-        setPeripheralConnected(undefined);
       } catch (error) {
         console.error(
           `[togglePeripheralConnection][${peripheral.id}] error when trying to disconnect device.`,
@@ -176,38 +195,6 @@ export function useHome({}: HomeProps): Hook {
       }
     } else {
       await connectPeripheral(peripheral);
-    }
-  };
-
-  const retrieveConnected = async () => {
-    try {
-      const connectedPeripherals = await BleManager.getConnectedPeripherals();
-      if (connectedPeripherals.length === 0) {
-        console.warn('[retrieveConnected] No connected peripherals found.');
-        return;
-      }
-
-      console.debug(
-        '[retrieveConnected] connectedPeripherals',
-        connectedPeripherals,
-      );
-
-      for (var i = 0; i < connectedPeripherals.length; i++) {
-        var peripheral = connectedPeripherals[i];
-        setPeripherals(map => {
-          let p = map.get(peripheral.id);
-          if (p) {
-            p.connected = true;
-            return new Map(map.set(p.id, p));
-          }
-          return map;
-        });
-      }
-    } catch (error) {
-      console.error(
-        '[retrieveConnected] unable to retrieve connected peripherals.',
-        error,
-      );
     }
   };
 
@@ -243,50 +230,12 @@ export function useHome({}: HomeProps): Hook {
         await sleep(900);
 
         /* Test read current RSSI value, retrieve services first */
-        const peripheralData = await BleManager.retrieveServices(peripheral.id);
-
-        const services = peripheralData.services;
-        const characteristics = peripheralData.characteristics;
-        if (services?.length && characteristics?.length) {
-          setServiceUUID(services[0].uuid);
-          setCharacteristicUUID(characteristics[0].characteristic);
-          await BleManager.startNotification(
-            peripheral.id,
-            services[0].uuid,
-            characteristics[0].characteristic,
-          );
-        }
+        await BleManager.retrieveServices(peripheral.id);
 
         const rssi = await BleManager.readRSSI(peripheral.id);
         console.debug(
           `[connectPeripheral][${peripheral.id}] retrieved current RSSI value: ${rssi}.`,
         );
-
-        if (peripheralData.characteristics) {
-          for (let characteristic of peripheralData.characteristics) {
-            if (characteristic.descriptors) {
-              for (let descriptor of characteristic.descriptors) {
-                try {
-                  let data = await BleManager.readDescriptor(
-                    peripheral.id,
-                    characteristic.service,
-                    characteristic.characteristic,
-                    descriptor.uuid,
-                  );
-                  console.debug(
-                    `[connectPeripheral][${peripheral.id}] ${characteristic.service} ${characteristic.characteristic} ${descriptor.uuid} descriptor read as:`,
-                    data,
-                  );
-                } catch (error) {
-                  console.error(
-                    `[connectPeripheral][${peripheral.id}] failed to retrieve descriptor ${descriptor} for characteristic ${characteristic}:`,
-                    error,
-                  );
-                }
-              }
-            }
-          }
-        }
 
         setPeripherals(map => {
           let p = map.get(peripheral.id);
@@ -298,6 +247,73 @@ export function useHome({}: HomeProps): Hook {
           }
           return map;
         });
+        await BleManager.disconnect(peripheral?.id);
+      }
+    } catch (error) {
+      console.error(
+        `[connectPeripheral][${peripheral.id}] connectPeripheral error`,
+        error,
+      );
+    }
+  };
+
+  const sendSignalToTurnOnLED = async (
+    peripheral: Peripheral,
+    signal: number,
+  ) => {
+    try {
+      if (signal > 0) {
+        setIsAlert(true);
+      }
+      if (peripheral) {
+        setPeripherals(map => {
+          let p = map.get(peripheral.id);
+          if (p) {
+            p.connecting = true;
+            return new Map(map.set(p.id, p));
+          }
+          return map;
+        });
+
+        await BleManager.connect(peripheral.id);
+        console.debug(`[connectPeripheral][${peripheral.id}] connected.`);
+
+        setPeripherals(map => {
+          let p = map.get(peripheral.id);
+          if (p) {
+            p.connecting = false;
+            p.connected = true;
+            setPeripheralConnected(p);
+            setIsConnecting(false);
+
+            return new Map(map.set(p.id, p));
+          }
+          return map;
+        });
+
+        // before retrieving services, it is often a good idea to let bonding & connection finish properly
+        await sleep(900);
+
+        /* Test read current RSSI value, retrieve services first */
+        const peripheralData = await BleManager.retrieveServices(peripheral.id);
+
+        const services = peripheralData.services;
+        const characteristics = peripheralData.characteristics;
+        if (services?.length && characteristics?.length) {
+          // activar alarma
+          // Valor que se enviará para encender el LED (puede variar según la configuración del dispositivo)
+          const valueToWrite = new Uint8Array([signal]); // Puedes ajustar este valor según las especificaciones del dispositivo
+          // Convertir Uint8Array a un array de números
+          const valueArray = Array.from(valueToWrite);
+
+          // Escribir el valor en la característica correspondiente
+          await BleManager.write(
+            peripheral.id,
+            services[0].uuid,
+            characteristics[0].characteristic,
+            valueArray,
+          );
+        }
       }
     } catch (error) {
       console.error(
@@ -310,38 +326,6 @@ export function useHome({}: HomeProps): Hook {
   function sleep(ms: number) {
     return new Promise<void>(resolve => setTimeout(resolve, ms));
   }
-
-  const sendSignalToTurnOnLED = async (
-    peripheralId: string,
-    signal: number,
-  ): Promise<void> => {
-    try {
-      //If exist serviceUUI and characteristicUUID , update the value according with signal
-      if (serviceUUID.length > 0 && characteristicUUID.length > 0) {
-        if (signal === 0 && peripheralConnected) {
-          // await connectPeripheral(peripheralConnected);
-          console.log('Apaga la señal');
-        } else {
-          console.log('Enciende la señal');
-        }
-        // Valor que se enviará para encender el LED (puede variar según la configuración del dispositivo)
-        const valueToWrite = new Uint8Array([signal]); // Puedes ajustar este valor según las especificaciones del dispositivo
-        // Convertir Uint8Array a un array de números
-        const valueArray = Array.from(valueToWrite);
-
-        // Escribir el valor en la característica correspondiente
-        await BleManager.write(
-          peripheralId,
-          serviceUUID,
-          characteristicUUID,
-          valueArray,
-        );
-      }
-    } catch (error) {
-      console.error('❌ Error al enviar la señal para encender el LED:', error);
-      throw error; // Puedes manejar el error según tus necesidades
-    }
-  };
 
   useEffect(() => {
     try {
@@ -448,6 +432,7 @@ export function useHome({}: HomeProps): Hook {
   const hideAddDeviceModal = () => setAddDeviceModalVisible(false);
 
   return {
+    isAlert,
     isScanning,
     isConnecting,
     compatibleDevicesModalVisible,
@@ -463,8 +448,8 @@ export function useHome({}: HomeProps): Hook {
     showCompatibleDevicesModal,
     hideCompatibleDevicesModal,
     togglePeripheralConnection,
-    increaseDistance,
-    decreaseDistance,
+    handleAuthenticate,
     sendSignalToTurnOnLED,
+    biometricsType,
   };
 }

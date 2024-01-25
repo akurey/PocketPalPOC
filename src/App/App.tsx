@@ -111,6 +111,7 @@ function App(): React.JSX.Element {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const [currentDistance, setCurrentDistance] = useState(0);
   const [rssi, setRssi] = useState(0);
+  const [timestamp, setTimestamp] = useState('');
 
   // Load data from AsyncStorage on component mount
   useEffect(() => {
@@ -142,13 +143,11 @@ function App(): React.JSX.Element {
   }, [state.device]);
 
   useEffect(() => {
-    console.log('Start - 1 ');
     requestBluetoothPermission();
     rangeBeacons();
   }, []);
 
   const rangeBeacons = async () => {
-    console.log('Reage beacons - 2');
     const region = {
       identifier: 'ESP TAG APP',
       uuid: 'FDA50693-A4E2-4FB1-AFCF-C6EB07647825', // Why this is burned ?
@@ -160,11 +159,10 @@ function App(): React.JSX.Element {
       Beacons.detectIBeacons();
     } else {
       try {
-        console.log('🚀 ~ rangeBeacons ~ region:', region);
         Beacons.requestAlwaysAuthorization();
         Beacons.startMonitoringForRegion(region);
       } catch (error) {
-        console.log('🚀 ~ rangeBeacons ~ error:', error);
+        console.error(`Beacons not started, error: ${error}`);
       }
     }
 
@@ -189,32 +187,20 @@ function App(): React.JSX.Element {
         ) {
           const time = new Date();
           const opciones = {
-            timeZone: 'America/Mexico_City', // UTC-6
-            hour12: true, // Para usar el formato de 24 horas
+            timeZone: 'America/Mexico_City', // Timezone: UTC-6
+            hour12: true, // 24 Hours Format
           };
-          const fechaHoraUTC6 = time.toLocaleString('es-MX', opciones);
-
-          // console.log(
-          //   '🚀 ~ file: App.tsx:189 ~ beacons.map ~ beacon:',
-          //   'accuracy: ',
-          //   beacon.accuracy,
-          //   'rssi: ',
-          //   beacon.rssi,
-          //   'time:',
-          //   time,
-          // );
-          console.log('RSSI: ', beacon.rssi);
+          const dateTimeUTC6 = time.toLocaleString('es-MX', opciones);
           setRssi(beacon.rssi);
-          console.log('TIME: ', fechaHoraUTC6);
-
+          setTimestamp(dateTimeUTC6);
           const pathLossExponent = 2.0;
           const distance = Math.pow(
             10,
             (-69 - beacon.rssi) / (10 * pathLossExponent),
           );
-          console.log('Distancia: ', distance);
           setCurrentDistance(distance);
         }
+        // console.log('🚀 ~ beacons.map ~ beacon.rssi:', beacon.rssi);
       });
     });
 
@@ -231,7 +217,11 @@ function App(): React.JSX.Element {
       <Provider>
         <SafeAreaView style={styles.container}>
           <StatusBar />
-          <Home />
+          <Home
+            rssi={rssi}
+            currentDistance={currentDistance}
+            timestamp={timestamp}
+          />
         </SafeAreaView>
       </Provider>
     </AppContext.Provider>
