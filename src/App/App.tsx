@@ -200,7 +200,6 @@ function App(): React.JSX.Element {
           );
           setCurrentDistance(distance);
         }
-        // console.log('🚀 ~ beacons.map ~ beacon.rssi:', beacon.rssi);
       });
     });
 
