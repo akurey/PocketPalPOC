@@ -13,7 +13,6 @@
     "@react-native-async-storage/async-storage": "^1.21.0",
     "react": "18.2.0",
     "react-native": "0.73.2",
-    "react-native-beacons-manager": "^1.0.7",
     "react-native-biometrics": "^3.0.1",
     "react-native-ble-manager": "^11.2.1",
     "react-native-paper": "^4.5.0",

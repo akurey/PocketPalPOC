@@ -1,23 +1,13 @@
 import {Dispatch, SetStateAction, useEffect, useState} from 'react';
 import {
-  SafeAreaView,
-  StyleSheet,
-  View,
-  Text,
-  StatusBar,
   NativeModules,
   NativeEventEmitter,
   Platform,
   PermissionsAndroid,
-  FlatList,
-  TouchableHighlight,
-  Pressable,
-  ScrollView,
 } from 'react-native';
 import {useAppContext} from '../../../App/App';
 // import {encode} from 'base-64';
 import ReactNativeBiometrics, {BiometryTypes} from 'react-native-biometrics';
-import {DEVICENAME} from '../../../constants/states';
 
 const SECONDS_TO_SCAN_FOR = 3;
 const SERVICE_UUIDS: string[] = [];
@@ -87,7 +77,7 @@ export function useHome({}: HomeProps): Hook {
       const biometrics = new ReactNativeBiometrics({
         allowDeviceCredentials: true,
       });
-      const {available} = await biometrics.isSensorAvailable();
+      const {available, biometryType} = await biometrics.isSensorAvailable();
       if (available) {
         const result = await biometrics.simplePrompt({
           promptMessage: 'Authenticate',
@@ -104,6 +94,7 @@ export function useHome({}: HomeProps): Hook {
           // Biometric authentication failed
         }
       } else {
+        console.log('Biometrics not available');
         // Biometric authentication not available
         // fallback to username/password login
       }
