@@ -8,13 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		00E356F31AD99517003FC87E /* PocketPalPOCTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* PocketPalPOCTests.m */; };
-		0C80B921A6F3F58F76C31292 /* libPods-PocketPalPOC.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-PocketPalPOC.a */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		7699B88040F8A987B510C191 /* libPods-PocketPalPOC-PocketPalPOCTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-PocketPalPOC-PocketPalPOCTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		C8DB1ED12B61EEDD00B03FB2 /* libRNiBeacon.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C8DB1EB92B61A4D100B03FB2 /* libRNiBeacon.a */; };
+		C89CF43C2B72CCF7002A2920 /* libRNiBeacon.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C89CF4312B72BACA002A2920 /* libRNiBeacon.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,9 +24,9 @@
 			remoteGlobalIDString = 13B07F861A680F5B00A75B9A;
 			remoteInfo = PocketPalPOC;
 		};
-		C8DB1EB82B61A4D100B03FB2 /* PBXContainerItemProxy */ = {
+		C89CF4302B72BACA002A2920 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = C8DB1EB42B61A4D100B03FB2 /* RNiBeacon.xcodeproj */;
+			containerPortal = C89CF42C2B72BACA002A2920 /* RNiBeacon.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = 0D03EBDE1E56B1E700C55E6B;
 			remoteInfo = RNiBeacon;
@@ -51,7 +50,12 @@
 		5DCACB8F33CDC322A6C60F78 /* libPods-PocketPalPOC.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-PocketPalPOC.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = PocketPalPOC/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		89C6BE57DB24E9ADA2F236DE /* Pods-PocketPalPOC-PocketPalPOCTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PocketPalPOC-PocketPalPOCTests.release.xcconfig"; path = "Target Support Files/Pods-PocketPalPOC-PocketPalPOCTests/Pods-PocketPalPOC-PocketPalPOCTests.release.xcconfig"; sourceTree = "<group>"; };
-		C8DB1EB42B61A4D100B03FB2 /* RNiBeacon.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RNiBeacon.xcodeproj; path = "../node_modules/react-native-beacons-manager/ios/RNiBeacon/RNiBeacon.xcodeproj"; sourceTree = "<group>"; };
+		C8447EFB2B72B81400FA6D60 /* libReactNativeBeaconsManager.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libReactNativeBeaconsManager.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C89CF42C2B72BACA002A2920 /* RNiBeacon.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RNiBeacon.xcodeproj; path = "../node_modules/react-native-beacons-manager/ios/RNiBeacon/RNiBeacon.xcodeproj"; sourceTree = "<group>"; };
+		C89CF4332B72C83B002A2920 /* libReactNativeBeaconsManager.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libReactNativeBeaconsManager.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C89CF4352B72C86D002A2920 /* libReactNativeBeaconsManager.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libReactNativeBeaconsManager.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C89CF4372B72C912002A2920 /* libReactNativeBeaconsManager.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libReactNativeBeaconsManager.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C89CF43A2B72CCD0002A2920 /* libReactNativeBeaconsManager.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libReactNativeBeaconsManager.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -68,8 +72,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C8DB1ED12B61EEDD00B03FB2 /* libRNiBeacon.a in Frameworks */,
-				0C80B921A6F3F58F76C31292 /* libPods-PocketPalPOC.a in Frameworks */,
+				C89CF43C2B72CCF7002A2920 /* libRNiBeacon.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -109,6 +112,11 @@
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C89CF43A2B72CCD0002A2920 /* libReactNativeBeaconsManager.a */,
+				C89CF4372B72C912002A2920 /* libReactNativeBeaconsManager.a */,
+				C89CF4352B72C86D002A2920 /* libReactNativeBeaconsManager.a */,
+				C89CF4332B72C83B002A2920 /* libReactNativeBeaconsManager.a */,
+				C8447EFB2B72B81400FA6D60 /* libReactNativeBeaconsManager.a */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				5DCACB8F33CDC322A6C60F78 /* libPods-PocketPalPOC.a */,
 				19F6CBCC0A4E27FBF8BF4A61 /* libPods-PocketPalPOC-PocketPalPOCTests.a */,
@@ -119,7 +127,7 @@
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				C8DB1EB42B61A4D100B03FB2 /* RNiBeacon.xcodeproj */,
+				C89CF42C2B72BACA002A2920 /* RNiBeacon.xcodeproj */,
 			);
 			name = Libraries;
 			sourceTree = "<group>";
@@ -159,10 +167,10 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
-		C8DB1EB52B61A4D100B03FB2 /* Products */ = {
+		C89CF42D2B72BACA002A2920 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C8DB1EB92B61A4D100B03FB2 /* libRNiBeacon.a */,
+				C89CF4312B72BACA002A2920 /* libRNiBeacon.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -242,8 +250,8 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = C8DB1EB52B61A4D100B03FB2 /* Products */;
-					ProjectRef = C8DB1EB42B61A4D100B03FB2 /* RNiBeacon.xcodeproj */;
+					ProductGroup = C89CF42D2B72BACA002A2920 /* Products */;
+					ProjectRef = C89CF42C2B72BACA002A2920 /* RNiBeacon.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -255,11 +263,11 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
-		C8DB1EB92B61A4D100B03FB2 /* libRNiBeacon.a */ = {
+		C89CF4312B72BACA002A2920 /* libRNiBeacon.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
 			path = libRNiBeacon.a;
-			remoteRef = C8DB1EB82B61A4D100B03FB2 /* PBXContainerItemProxy */;
+			remoteRef = C89CF4302B72BACA002A2920 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -448,6 +456,7 @@
 			baseConfigurationReference = 5B7EB9410499542E8C5724F5 /* Pods-PocketPalPOC-PocketPalPOCTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = N685SR3NDJ;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -476,6 +485,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				COPY_PHASE_STRIP = NO;
+				DEVELOPMENT_TEAM = N685SR3NDJ;
 				INFOPLIST_FILE = PocketPalPOCTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -722,6 +732,7 @@
 					"\"$(SDKROOT)/usr/lib/swift\"",
 					"\"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)\"",
 					"\"$(inherited)\"",
+					"\"$(SRCROOT)/node_modules/react-native-beacons-manager/ios\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -795,6 +806,7 @@
 					"\"$(SDKROOT)/usr/lib/swift\"",
 					"\"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)\"",
 					"\"$(inherited)\"",
+					"\"$(SRCROOT)/node_modules/react-native-beacons-manager/ios\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				OTHER_CFLAGS = "$(inherited)";

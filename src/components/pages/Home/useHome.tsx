@@ -163,11 +163,16 @@ export function useHome({}: HomeProps): Hook {
 
   //Se ejecuta cada vez que se encuentra un peripheal
   const handleDiscoverPeripheral = (peripheral: Peripheral) => {
-    if (peripheral.name) {
-      setPeripherals(map => {
-        return new Map(map.set(peripheral.id, peripheral));
-      });
-    }
+    setPeripherals(map => {
+      if (!peripheral.name) {
+        if (peripheral.id == '3C:E9:0E:94:3A:42') {
+          peripheral.name = 'ESP TAG APP';
+        } else {
+          peripheral.name = 'Unknown device';
+        }
+      }
+      return new Map(map.set(peripheral.id, peripheral));
+    });
   };
 
   const togglePeripheralConnection = async (peripheral: Peripheral) => {
@@ -296,12 +301,11 @@ export function useHome({}: HomeProps): Hook {
           const valueToWrite = new Uint8Array([signal]); // Puedes ajustar este valor según las especificaciones del dispositivo
           // Convertir Uint8Array a un array de números
           const valueArray = Array.from(valueToWrite);
-
           // Escribir el valor en la característica correspondiente
           await BleManager.write(
             peripheral.id,
-            services[0].uuid,
-            characteristics[0].characteristic,
+            services[services.length - 1].uuid,
+            characteristics[characteristics.length - 1].characteristic,
             valueArray,
           );
         }

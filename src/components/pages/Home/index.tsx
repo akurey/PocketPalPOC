@@ -3,15 +3,9 @@ import {View, Text, FlatList, ScrollView, TouchableOpacity} from 'react-native';
 import {Modal, Portal, ActivityIndicator} from 'react-native-paper';
 import {COLOR_SECONDARY} from '../../../constants/theme';
 import {DEVICENAME} from '../../../constants/states';
-import {
-  MinusIcon,
-  PlusIcon,
-  ProfileIcon,
-  SettingsIcon,
-} from '../../../assets/icons';
+import {ProfileIcon, SettingsIcon} from '../../../assets/icons';
 import {RoundedButtonWithIcon} from '../../atoms';
 import {useHome} from './useHome';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 import styles from './styles';
 import {BiometricsAlert, Device, Header} from '../../molecules';
 import {ErrorBoxImage} from '../../../assets/images';
@@ -43,15 +37,9 @@ const Home = ({rssi, currentDistance, timestamp}: RssiData) => {
     isScanning,
     isConnecting,
     compatibleDevicesModalVisible,
-    addDeviceModalVisible,
     peripherals,
     peripheralConnected,
-    newDeviceDistance,
-    setNewDeviceDistance,
-    newDeviceName,
     showAddDeviceModal,
-    hideAddDeviceModal,
-    setNewDeviceName,
     showCompatibleDevicesModal,
     hideCompatibleDevicesModal,
     togglePeripheralConnection,
@@ -62,10 +50,8 @@ const Home = ({rssi, currentDistance, timestamp}: RssiData) => {
 
   useEffect(() => {
     if (peripheralConnected) {
-      // hideAddDeviceModal();
     }
   }, [peripheralConnected]);
-  //console.debug('peripherals map updated', [...peripherals.entries()]);
   //
   useEffect(() => {
     if (rssi && currentDistance > 0 && timestamp.length) {
