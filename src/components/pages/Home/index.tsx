@@ -74,7 +74,7 @@ const Home = ({rssi, currentDistance, timestamp}: RssiData) => {
       const averageDistance = totalDistance / newRssiDataList.length;
       setAverageDistance(averageDistance.toFixed(2));
 
-      if (averageRssi < -80) {
+      if (averageRssi < -73) {
         activeAlarm();
       }
     }
@@ -137,7 +137,7 @@ const Home = ({rssi, currentDistance, timestamp}: RssiData) => {
         {peripheralConnected ? (
           <Device
             deviceName={DEVICENAME}
-            alertDistance={3} //{parseInt(state.device.alertDistance, 10)}
+            alertDistance={1.5} //{parseInt(state.device.alertDistance, 10)}
             currentLocation={`${averageDistance} meters away.`}
             onPressAction={() =>
               togglePeripheralConnection(peripheralConnected)

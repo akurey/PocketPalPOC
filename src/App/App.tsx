@@ -182,7 +182,7 @@ function App(): React.JSX.Element {
       beacons.map((beacon: Beacon) => {
         if (
           beacon.rssi !== 0 &&
-          beacon.uuid === 'fda50693-a4e2-4fb1-afcf-c6eb07647825'
+          beacon.uuid === 'FDA50693-A4E2-4FB1-AFCF-C6EB07647825' //For android use: //'fda50693-a4e2-4fb1-afcf-c6eb07647825'
         ) {
           const time = new Date();
           const opciones = {

@@ -163,16 +163,11 @@ export function useHome({}: HomeProps): Hook {
 
   //Se ejecuta cada vez que se encuentra un peripheal
   const handleDiscoverPeripheral = (peripheral: Peripheral) => {
-    setPeripherals(map => {
-      if (!peripheral.name) {
-        if (peripheral.id == '3C:E9:0E:94:3A:42') {
-          peripheral.name = 'ESP TAG APP';
-        } else {
-          peripheral.name = 'Unknown device';
-        }
-      }
-      return new Map(map.set(peripheral.id, peripheral));
-    });
+    if (peripheral.name) {
+      setPeripherals(map => {
+        return new Map(map.set(peripheral.id, peripheral));
+      });
+    }
   };
 
   const togglePeripheralConnection = async (peripheral: Peripheral) => {
