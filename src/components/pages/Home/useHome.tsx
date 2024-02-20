@@ -35,6 +35,9 @@ interface Hook {
   handleAuthenticate: () => void;
   sendSignalToTurnOnLED: (peripheral: Peripheral, signal: number) => void;
   biometricsType: string;
+  peripheralSelected: any;
+  setPeripheralSelected: any;
+  sendSignalToTurnOffLED: any;
 }
 import BleManager, {
   BleDisconnectPeripheralEvent,
@@ -71,6 +74,7 @@ export function useHome({}: HomeProps): Hook {
   const [isAlert, setIsAlert] = useState(false);
 
   const [biometricsType, setBiometricsType] = useState('');
+  const [peripheralSelected, setPeripheralSelected] = useState<Peripheral>();
 
   const handleAuthenticate = async () => {
     try {
@@ -85,9 +89,8 @@ export function useHome({}: HomeProps): Hook {
         if (result.success) {
           console.log('SUCCESS');
           if (peripheralConnected) {
-            await BleManager.disconnect(peripheralConnected?.id);
+            sendSignalToTurnOffLED(peripheralSelected!);
           }
-          setIsAlert(false);
           // Biometric authentication successful
         } else {
           console.log('FAIL');
@@ -139,6 +142,7 @@ export function useHome({}: HomeProps): Hook {
     console.debug(
       `[handleDisconnectedPeripheral][${event.peripheral}] disconnected.`,
     );
+
     setPeripherals(map => {
       let p = map.get(event.peripheral);
       if (p) {
@@ -248,14 +252,41 @@ export function useHome({}: HomeProps): Hook {
     }
   };
 
+  const sendSignalToTurnOffLED = async (peripheral: Peripheral) => {
+    await BleManager.disconnect(peripheral.id);
+    await BleManager.connect(peripheral.id);
+    const peripheralData = await BleManager.retrieveServices(peripheral.id);
+    const services = peripheralData.services;
+    console.log('last invocation 1');
+    const characteristics = peripheralData.characteristics;
+    console.log('last invocation 2');
+    if (services?.length && characteristics?.length) {
+      // activar alarma
+      // Valor que se enviará para encender el LED (puede variar según la configuración del dispositivo)
+      const valueToWrite = new Uint8Array([0]); // Puedes ajustar este valor según las especificaciones del dispositivo
+      // Convertir Uint8Array a un array de números
+      const valueArray = Array.from(valueToWrite);
+      console.log('last invocation 3');
+      // Escribir el valor en la característica correspondiente
+      BleManager.write(
+        peripheral.id,
+        services[services.length - 1].uuid,
+        characteristics[characteristics.length - 1].characteristic,
+        valueArray,
+      );
+      await sleep(2000);
+      await BleManager.disconnect(peripheral.id);
+      setIsAlert(false);
+      console.log('last invocation 4');
+    }
+    console.log('last invocation 5');
+  };
+
   const sendSignalToTurnOnLED = async (
     peripheral: Peripheral,
     signal: number,
   ) => {
     try {
-      if (signal > 0) {
-        setIsAlert(true);
-      }
       if (peripheral) {
         setPeripherals(map => {
           let p = map.get(peripheral.id);
@@ -266,7 +297,9 @@ export function useHome({}: HomeProps): Hook {
           return map;
         });
 
+        console.log('connected -<><><><><><><><>-');
         await BleManager.connect(peripheral.id);
+
         console.debug(`[connectPeripheral][${peripheral.id}] connected.`);
 
         setPeripherals(map => {
@@ -281,35 +314,46 @@ export function useHome({}: HomeProps): Hook {
           }
           return map;
         });
-
         // before retrieving services, it is often a good idea to let bonding & connection finish properly
         await sleep(900);
 
         /* Test read current RSSI value, retrieve services first */
         const peripheralData = await BleManager.retrieveServices(peripheral.id);
-
         const services = peripheralData.services;
+        console.log('last invocation 1');
         const characteristics = peripheralData.characteristics;
+        console.log('last invocation 2');
         if (services?.length && characteristics?.length) {
           // activar alarma
           // Valor que se enviará para encender el LED (puede variar según la configuración del dispositivo)
           const valueToWrite = new Uint8Array([signal]); // Puedes ajustar este valor según las especificaciones del dispositivo
           // Convertir Uint8Array a un array de números
           const valueArray = Array.from(valueToWrite);
+          console.log('last invocation 3');
           // Escribir el valor en la característica correspondiente
-          await BleManager.write(
+          BleManager.write(
             peripheral.id,
             services[services.length - 1].uuid,
             characteristics[characteristics.length - 1].characteristic,
             valueArray,
-          );
+          ).then(response => console.log(response, 222222));
+          console.log('last invocation 4');
+          if (signal > 0) {
+            setIsAlert(true);
+          }
         }
+        console.log('last invocation 5');
+
+        //await BleManager.disconnect(peripheral?.id); // Esto no se ejecuta , y por eso la desconexion se hace manual.
       }
+      console.log(3333333);
     } catch (error) {
       console.error(
         `[connectPeripheral][${peripheral.id}] connectPeripheral error`,
         error,
       );
+    } finally {
+      console.log('Finally');
     }
   };
 
@@ -441,5 +485,8 @@ export function useHome({}: HomeProps): Hook {
     handleAuthenticate,
     sendSignalToTurnOnLED,
     biometricsType,
+    peripheralSelected,
+    setPeripheralSelected,
+    sendSignalToTurnOffLED,
   };
 }

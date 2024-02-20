@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable prettier/prettier */
 import React, {
   Dispatch,
   Reducer,
@@ -12,6 +14,7 @@ import {
   Platform,
   SafeAreaView,
   StatusBar,
+  AppState as stateApp,
 } from 'react-native';
 import {useEffect} from 'react';
 import styles from './styles';
@@ -19,6 +22,7 @@ import {Provider} from 'react-native-paper';
 import {Home} from '../components/pages';
 import Beacons from 'react-native-beacons-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BackgroundService from 'react-native-background-actions';
 
 interface DeviceData {
   device?: any;
@@ -112,6 +116,41 @@ function App(): React.JSX.Element {
   const [rssi, setRssi] = useState(0);
   const [timestamp, setTimestamp] = useState('');
 
+  const sleep = (time: number | undefined) => {
+    return new Promise(resolve => setTimeout(() => resolve(12), time));
+  };
+
+  const veryIntensiveTask = async (taskDataArguments: {delay: any}) => {
+    // Example of an infinite loop task
+    const {delay} = taskDataArguments;
+    await new Promise(async resolve => {
+      for (let i = 0; BackgroundService.isRunning(); i++) {
+        await sleep(delay);
+      }
+    });
+  };
+  const options = {
+    taskName: 'Example',
+    taskTitle: 'ExampleTask title',
+    taskDesc: 'ExampleTask description',
+    // taskIcon: {
+    //   name: 'ic_launcher',
+    //   type: 'mipmap',
+    // },
+    // color: '#ff00ff',
+    // linkingURI: '', // See Deep Linking for more info
+    parameters: {
+      delay: 1500,
+    },
+  };
+
+  const initBackgroundFetch = async () => {
+    await BackgroundService.start(veryIntensiveTask, options);
+    await BackgroundService.updateNotification({
+      taskDesc: 'New ExampleTask description',
+    });
+  };
+
   // Load data from AsyncStorage on component mount
   useEffect(() => {
     const loadData = async () => {
@@ -126,6 +165,28 @@ function App(): React.JSX.Element {
     };
 
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const subscription = stateApp.addEventListener('change', nextAppState => {
+      if (nextAppState === 'background') {
+        initBackgroundFetch();
+        console.log('state: background');
+      }
+      if (nextAppState === 'active') {
+        BackgroundService.stop();
+        console.log('state: active');
+      }
+      if (nextAppState === 'inactive') {
+        initBackgroundFetch();
+        console.log('state: inactive');
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save data to AsyncStorage whenever device changes
@@ -144,6 +205,7 @@ function App(): React.JSX.Element {
   useEffect(() => {
     requestBluetoothPermission();
     rangeBeacons();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const rangeBeacons = async () => {

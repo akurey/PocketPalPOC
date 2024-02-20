@@ -28,7 +28,6 @@ interface RssiData {
 }
 
 const Home = ({rssi, currentDistance, timestamp}: RssiData) => {
-  const [peripheralSelected, setPeripheralSelected] = useState<Peripheral>();
   const [rssiDataList, setRssiDataList] = useState<RssiData[]>([]);
   const [averageDistance, setAverageDistance] = useState<String>('');
 
@@ -46,6 +45,9 @@ const Home = ({rssi, currentDistance, timestamp}: RssiData) => {
     handleAuthenticate,
     sendSignalToTurnOnLED,
     biometricsType,
+    peripheralSelected,
+    setPeripheralSelected,
+    sendSignalToTurnOffLED,
   } = useHome({});
 
   useEffect(() => {
@@ -103,13 +105,15 @@ const Home = ({rssi, currentDistance, timestamp}: RssiData) => {
 
   const activeAlarm = () => {
     if (peripheralSelected) {
+      console.log('sendSignalToTurnOnLED', peripheralSelected, 1);
       sendSignalToTurnOnLED(peripheralSelected, 1);
     }
   };
 
   const deactiveAlarm = () => {
     if (peripheralSelected) {
-      sendSignalToTurnOnLED(peripheralSelected, 0);
+      sendSignalToTurnOffLED(peripheralSelected);
+      //sendSignalToTurnOnLED(peripheralSelected, 0);
     }
   };
   return (
@@ -153,9 +157,9 @@ const Home = ({rssi, currentDistance, timestamp}: RssiData) => {
         ) : null}
       </ScrollView>
       <View style={styles.homeButtonsContainer}>
-        <TouchableOpacity onPress={activeAlarm}>
+        {/* <TouchableOpacity onPress={activeAlarm}>
           <SettingsIcon />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <View style={styles.addButtonContainer}>
           <RoundedButtonWithIcon
@@ -163,9 +167,9 @@ const Home = ({rssi, currentDistance, timestamp}: RssiData) => {
             onClick={showCompatibleDevicesModal}
           />
         </View>
-        <TouchableOpacity onPress={deactiveAlarm}>
+        {/* <TouchableOpacity onPress={deactiveAlarm}>
           <ProfileIcon />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
       {/* compatible devices modal */}
       <Portal>
