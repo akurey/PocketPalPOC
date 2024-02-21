@@ -130,9 +130,9 @@ function App(): React.JSX.Element {
     });
   };
   const options = {
-    taskName: 'Example',
-    taskTitle: 'ExampleTask title',
-    taskDesc: 'ExampleTask description',
+    taskName: 'background task rssi beacons',
+    taskTitle: 'background task rssi beacons',
+    taskDesc: 'background task rssi beacons',
     // taskIcon: {
     //   name: 'ic_launcher',
     //   type: 'mipmap',
@@ -140,7 +140,7 @@ function App(): React.JSX.Element {
     // color: '#ff00ff',
     // linkingURI: '', // See Deep Linking for more info
     parameters: {
-      delay: 1500,
+      delay: 3000,
     },
   };
 
@@ -171,15 +171,12 @@ function App(): React.JSX.Element {
     const subscription = stateApp.addEventListener('change', nextAppState => {
       if (nextAppState === 'background') {
         initBackgroundFetch();
-        console.log('state: background');
       }
       if (nextAppState === 'active') {
         BackgroundService.stop();
-        console.log('state: active');
       }
       if (nextAppState === 'inactive') {
         initBackgroundFetch();
-        console.log('state: inactive');
       }
     });
 
