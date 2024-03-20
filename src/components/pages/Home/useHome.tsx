@@ -8,6 +8,7 @@ import {
 import {useAppContext} from '../../../App/App';
 // import {encode} from 'base-64';
 import ReactNativeBiometrics, {BiometryTypes} from 'react-native-biometrics';
+import Sound from 'react-native-sound';
 
 const SECONDS_TO_SCAN_FOR = 3;
 const SERVICE_UUIDS: string[] = [];
@@ -58,6 +59,13 @@ declare module 'react-native-ble-manager' {
   }
 }
 
+Sound.setCategory('Playback');
+const buttonSound = new Sound('alert20.mp3', Sound.MAIN_BUNDLE, error => {
+  if (error) {
+    console.log('Error al cargar el sonido', error);
+  }
+});
+
 export function useHome({}: HomeProps): Hook {
   const {state: contextState, dispatch} = useAppContext();
   const [newDeviceName, setNewDeviceName] = useState('');
@@ -87,13 +95,15 @@ export function useHome({}: HomeProps): Hook {
           promptMessage: 'Authenticate',
         });
         if (result.success) {
-          console.log('SUCCESS');
+          console.debug('SUCCESS');
+          stopAlarm();
           if (peripheralConnected) {
+            setIsAlert(false);
             sendSignalToTurnOffLED(peripheralSelected!);
           }
           // Biometric authentication successful
         } else {
-          console.log('FAIL');
+          console.error('FAIL');
           // Biometric authentication failed
         }
       } else {
@@ -273,16 +283,28 @@ export function useHome({}: HomeProps): Hook {
       );
       await sleep(2000);
       await BleManager.disconnect(peripheral.id);
-      setIsAlert(false);
     }
   };
 
+  const playAlarm = () => {
+    buttonSound.play(success => {
+      if (!success) {
+        console.log('Error al reproducir el sonido');
+      }
+    });
+  };
+
+  const stopAlarm = () => {
+    buttonSound.stop();
+  };
   const sendSignalToTurnOnLED = async (
     peripheral: Peripheral,
     signal: number,
   ) => {
     try {
       if (peripheral) {
+        playAlarm();
+        setIsAlert(true);
         setPeripherals(map => {
           let p = map.get(peripheral.id);
           if (p) {
@@ -332,8 +354,6 @@ export function useHome({}: HomeProps): Hook {
             setIsAlert(true);
           }
         }
-
-        //await BleManager.disconnect(peripheral?.id); // Esto no se ejecuta , y por eso la desconexion se hace manual.
       }
     } catch (error) {
       console.error(

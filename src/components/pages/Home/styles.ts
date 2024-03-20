@@ -13,7 +13,7 @@ export default StyleSheet.create({
     padding: 20,
   },
   text: {
-    color: COLOR_PRIMARY_DARK,
+    color: 'black',
     fontFamily: 'Helvetica',
     fontStyle: 'normal',
     fontWeight: '700',

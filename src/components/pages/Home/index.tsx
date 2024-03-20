@@ -10,8 +10,8 @@ import styles from './styles';
 import {BiometricsAlert, Device, Header} from '../../molecules';
 import {ErrorBoxImage} from '../../../assets/images';
 import {useAppContext} from '../../../App/App';
+// import Sound from 'react-native-sound';
 
-import {Peripheral} from 'react-native-ble-manager';
 import ConnectingDevice from '../../molecules/Device/connectingDevice';
 
 declare module 'react-native-ble-manager' {
@@ -54,7 +54,6 @@ const Home = ({rssi, currentDistance, timestamp}: RssiData) => {
     if (peripheralConnected) {
     }
   }, [peripheralConnected]);
-  //
   useEffect(() => {
     if (rssi && currentDistance > 0 && timestamp.length) {
       const newRssiDataList = [
